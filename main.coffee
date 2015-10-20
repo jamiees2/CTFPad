@@ -1,5 +1,5 @@
 express = require 'express'
-https = require 'https'
+http = require 'http'
 httpProxy = require 'http-proxy'
 process = require 'child_process'
 fs = require 'fs'
@@ -35,10 +35,11 @@ app.use '/css/', express.static 'web/css/'
 app.use '/img/', express.static 'web/img/'
 app.use '/doc/', express.static 'web/doc/'
 
-options =
-  key: fs.readFileSync config.keyfile
-  cert: fs.readFileSync config.certfile
-server = https.createServer options, app
+options = {}
+#  key: fs.readFileSync config.keyfile
+#  cert: fs.readFileSync config.certfile
+#server = https.createServer options, app
+server = http.createServer app
 scoreboards = {2: ['test','test2']}
 
 validateLogin = (user, pass, cb) ->
@@ -227,7 +228,7 @@ proxy.on 'error', (err, req, res) ->
     res.send 500
   catch e then return
 
-proxyServer = https.createServer options, (req, res) ->
+proxyServer = http.createServer (req, res) ->
   if req.headers.cookie
     sessid = req.headers.cookie.substr req.headers.cookie.indexOf('ctfpad=')+7, 32
     validateSession sessid, (ans) ->
@@ -252,7 +253,6 @@ etherpad.stdout.on 'data', (line) ->
   console.log "[etherpad] #{line.toString 'utf8', 0, line.length-1}"
 etherpad.stderr.on 'data', (line) ->
   console.log "[etherpad] #{line.toString 'utf8', 0, line.length-1}"
-
 wss = new WebSocketServer {server:server}
 wss.broadcast = (msg, exclude, scope=null) ->
   for c in this.clients
@@ -309,7 +309,7 @@ wss.on 'connection', (sock) ->
             s.send JSON.stringify {type: 'ctfmodification'}
       else console.log msg
 
-server.listen config.port
+server.listen config.port, '0.0.0.0'
 proxyServer.listen config.etherpad_port
 console.log "listening on port #{config.port} and #{config.etherpad_port}"
 
